@@ -487,9 +487,7 @@ class Game2048(Widget):
         app.gs_score(self.score)
 
     def restart(self):
-        self.score = 0
-        self.moves = 0
-        self.mytime = 0
+        self.score, self.moves, self.mytime = 0, 0, 0
         self.ended = False
         self.level_info = self.current_level.info
         for i in self.get_cubes():
