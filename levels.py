@@ -43,6 +43,9 @@ class Level1(Level):
         self.info = "Create 32 in 22 moves"
         self.unlocked = True
         self.grid_size = 3
+        self.grid = [[None, None, None],
+                    [None, None, None],
+                    ["Blocked", None, None]]
 
     def check_condition(self, cubes, score, moves, time):
         #print(cube.number)
@@ -61,6 +64,11 @@ class Level2(Level):
         self.info = "Create 32 in 15 seconds"
         self.grid_size = 5
         self.unlocked = True
+        self.grid = [[None, None, None, None, None],
+                    [None, None, None, None, None],
+                    [None, None, None, None, None],
+                    [None, None, None, None, None],
+                    [None, None, None, None, None]]
 
     def check_condition(self, cubes, score, moves, time):
         for cube in cubes:
@@ -77,7 +85,7 @@ class Level3(Level):
     def check_condition(self, cubes, score, moves, time):
         if score >= 200 and time < 20:
             return "won"
-        
+
         if time >= 20:
             return "lost"
 
@@ -127,4 +135,3 @@ class Level5(Level):
         else:
             self.nr_of_four = 0
             self.nr_of_eight = 0
-

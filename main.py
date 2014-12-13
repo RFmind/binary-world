@@ -41,7 +41,7 @@ if platform == 'android':
         128: achievement_block_128,
         256: achievement_block_256,
         512: achievement_block_512,
-        1024: achievement_block_1024, 
+        1024: achievement_block_1024,
         2048: achievement_block_2048,
         4096: achievement_block_4096}
 
@@ -51,7 +51,6 @@ if platform == 'android':
 
 else:
     achievements = {}
-
 
 class ButtonBehavior(object):
     # this is a port of the Kivy 1.8.0 version, the current android versino
@@ -113,6 +112,7 @@ class Number(Widget):
     number = NumericProperty(2)
     scale = NumericProperty(.1)
     colors = {
+        1: get_color_from_hex('#37988F'),
         2: get_color_from_hex('#37988F'),
         4: get_color_from_hex('#3C3C3C'),
         8: get_color_from_hex('#E16F33'),
@@ -128,6 +128,8 @@ class Number(Widget):
         8192: get_color_from_hex('#37988F')}
 
     def __init__(self, **kwargs):
+        if 'number' in kwargs:
+            self.number = kwargs['number']
         super(Number, self).__init__(**kwargs)
         anim = Animation(scale=1., d=.15, t='out_quad')
         anim.bind(on_complete=self.clean_canvas)
@@ -202,27 +204,22 @@ class Game2048(Widget):
     ended = False
     win_value = False
     level_info = StringProperty("")
-    
 
     def __init__(self, **kwargs):
         super(Game2048, self).__init__()
 
-        # create empty grid
-        self.grid = []
-        
         self.levels = Levels()
         self.current_level = self.levels.next_level()
         self.level_info = self.current_level.info
         self.grid_size = self.current_level.grid_size
+        self.grid = self.current_level.grid[:]
 
-        self.build_grid()
         # bind keyboard
         Window.bind(on_key_down=self.on_key_down)
         Window.on_keyboard = lambda *x: None
 
         #schedule clock
         Clock.schedule_interval(self.update_time, 1)
-
         self.restart()
 
     #######################################################
@@ -243,12 +240,12 @@ class Game2048(Widget):
             PythonActivity = autoclass('org.renpy.android.PythonActivity')
             PythonActivity.mActivity.moveTaskToBack(dTrue)
             return True
-        
+
         # if game won or lost
         if self.get_game_status() != None:
             self.end()
             self.ended = True
-        
+
         if (self.has_empty() or self.can_combine()) and self.moved and not self.ended:
             Clock.schedule_once(self.spawn_number, .20)
 
@@ -278,33 +275,33 @@ class Game2048(Widget):
 
         if (self.has_empty() or self.can_combine()) and self.moved and not self.ended:
             Clock.schedule_once(self.spawn_number, .20)
-        
+
         return True
-
-
 
     ##########################################################
     #                   Selectors                            #
     ##########################################################
 
+    def iterate_grid(self, grid):
+        for ix in range(len(grid)):
+            for iy in range(len(grid)):
+                child = grid[ix][iy]
+                yield ix, iy, child
+
     def get_cubes(self):
         cubes = []
-        for ix in range(self.grid_size):
-            for iy in range(self.grid_size):
-                child = self.grid[ix][iy]
-                if child:
-                    cubes.append([ix, iy, child])
+        for ix, iy, child in self.iterate_grid(self.grid):
+            if child and not(child == "Blocked"):
+                cubes.append([ix, iy, child])
         return cubes
 
     def get_empty(self):
         empty = []
-        for ix in range(self.grid_size):
-            for iy in range(self.grid_size):
-                child = self.grid[ix][iy]
+        for ix, iy, child in self.iterate_grid(self.grid):
                 if not child:
                     empty.append([ix, iy])
         return empty
-    
+
     def get_cube_pos(self, ix, iy):
         padding = self.cube_padding
         cube_size = self.cube_size
@@ -314,8 +311,8 @@ class Game2048(Widget):
 
     def get_game_status(self):
         # check level end
-        win_check = self.current_level.check_condition(self.get_cubes(), self.score, self.moves, self.mytime)
-        return win_check
+        game_status = self.current_level.check_condition(self.get_cubes(), self.score, self.moves, self.mytime)
+        return game_status
 
     def can_combine(self):
         grid = self.grid
@@ -340,15 +337,19 @@ class Game2048(Widget):
 
     ######################################################
     ######################################################
-    
+
     def build_grid(self):
         self.grid = []
-        for i in range(self.grid_size):
-            line = []
-            for j in range(self.grid_size):
-                line.append(None)
-            self.grid.append(line)
-        print(self.grid)
+        for i in range(len(self.current_level.grid)):
+            self.grid.append([])
+            for j in self.current_level.grid[i]:
+                self.grid[i].append(j)
+
+    def create_blocked_cubes(self, *args):
+        for ix, iy, child in self.iterate_grid(self.grid):
+            if child == "Blocked":
+                self.grid[ix][iy] = None
+                self.spawn_number_at(ix, iy, 1)
 
     def update_time(self, callback):
         if not self.ended:
@@ -361,10 +362,9 @@ class Game2048(Widget):
             #BorderImage(pos=self.pos, size=self.size, source='data/round.png')
             #Color(60/255., 60/255., 60/255.)
             csize = self.cube_size, self.cube_size
-            for ix in range(self.grid_size):
-                for iy in range(self.grid_size):
-                    BorderImage(pos=self.get_cube_pos(ix, iy), size=csize,
-                    source='data/square2.png')
+            for ix, iy, child in self.iterate_grid(self.grid):
+                BorderImage(pos=self.get_cube_pos(ix, iy), size=csize,
+                source='data/square2.png')
 
     def reposition(self, *args):
         # calculate the size of a number
@@ -375,7 +375,7 @@ class Game2048(Widget):
         self.cube_padding = padding
 
         self.rebuild_background()
-        
+
         for i in self.get_cubes():
             i[2].size = cube_size, cube_size
             i[2].pos = self.get_cube_pos(i[0], i[1])
@@ -397,6 +397,7 @@ class Game2048(Widget):
                 pos=self.get_cube_pos(ix, iy),
                 number=value)
         self.grid[ix][iy] = number
+        print("Number test:",self.grid[ix][iy].number)
         self.add_widget(number)
 
     def move(self, direction):
@@ -438,14 +439,13 @@ class Game2048(Widget):
                 if grid[ix][iy] != cube:
                     self.moved = True
                 grid[ix][iy] = cube
-                if not cube:
+                if not cube or cube == "Blocked":
                     continue
-                
-                #pos = self.get_cube_pos(ix, iy)
+
                 pos = self.get_cube_pos(ix, iy)
                 if cube.pos != pos:
                     cube.move_to(pos)
-        
+
         if not self.ended and self.moved:
             self.moves = self.moves + 1
 
@@ -481,7 +481,7 @@ class Game2048(Widget):
         elif self.get_game_status() == "lost":
             text = "FAILED"
             self.ids.next_level_button.opacity = 0.5
-            
+
         self.ids.end_label.text = text
         Animation(opacity=1., d=.5).start(end)
         app.gs_score(self.score)
@@ -498,6 +498,8 @@ class Game2048(Widget):
         self.grid_size = self.current_level.grid_size
         self.build_grid()
         self.reposition()
+
+        Clock.schedule_once(self.create_blocked_cubes, .1)
         Clock.schedule_once(self.spawn_number, .1)
         Clock.schedule_once(self.spawn_number, .1)
         self.ids.end.opacity = 0
@@ -532,9 +534,6 @@ class Game2048(Widget):
                 iy = iy + 1
 
         self.ids.levelspane.opacity = 1
-
-        
-
 
 class Game2048App(App):
     use_kivy_settings = False

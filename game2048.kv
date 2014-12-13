@@ -37,10 +37,10 @@
 			xy: -self.center_x, -self.center_y
 	canvas.after:
 		PopMatrix
-			
+
 	canvas:
 		Color:
-			rgb: self.colors.get(self.number, self.colors.get(2))
+			rgb: self.colors[self.number]
 		BorderImage:
 			pos: self.pos
 			size: self.size
@@ -65,7 +65,7 @@
 			xy: -self.center_x, -self.center_y
 	canvas.after:
 		PopMatrix
-			
+
 	canvas:
 		Color:
 			rgb: rgb(self.color)
@@ -102,7 +102,7 @@ BoxLayout:
 			spacing: '2dp'
 			padding: '2dp'
 			canvas.before:
-				Color: 
+				Color:
 					rgb: 230/255., 230/255., 230/255.
 				BorderImage:
 					pos: self.pos
@@ -225,7 +225,7 @@ BoxLayout:
 		opacity: 0
 
 		canvas:
-			Color: 
+			Color:
 				rgb: 1,1,1,1
 			BorderImage:
 				pos: self.pos
@@ -273,14 +273,14 @@ BoxLayout:
 				text: 'Next Level'
 				on_press: root.next_level() if next_level_button.opacity == 1 and end.opacity == 1 else None
 				font_size: '20dp'
-			
+
 			TextButton:
 				id: level_selector_button
 				text: 'All Levels'
 				on_press: root.all_levels() if end.opacity == 1 else None
 				font_size: '20dp'
 
-	
+
 
 # still using 1.7.2 for android, and i want the title color
 # ModalView widget
